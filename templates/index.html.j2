@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Switchbot data viewer</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script type="text/javascript" src="{{ url_for('static', filename='scripts.js') }}"></script>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            <h1>Switchbot data viewer</h1>
+
+            <div class="filtri">
+                <input type="hidden" id="date_min" value="{{ date_min }}"/>
+                <input type="hidden" id="date_max" value="{{ date_max }}"/>
+
+                <div class="filter_group">
+                    <label for="sensor">Sensor</label>
+                    <select id="sensor">
+                        {% for s in sensors %}
+                        <option value="{{ s.sensor_id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter_group">
+                    <label for="start_date">Start date</label>
+                    <input type="date" id="start_date" min="{{ date_min }}" max="{{ date_max }}">
+                </div>
+
+                <div class="filter_group">
+                    <label for="end_date">End date</label>
+                    <input type="date" id="end_date" min="{{ date_min }}" max="{{ date_max }}">
+                </div>
+
+                <button onclick="update_graph()">Filter</button>
+                <button onclick="reset_graph()" style="background: #6c757d;">Reset</button>
+            </div>
+
+            <div class="loading" id="loading">Loading...</div>
+
+            <div class="message" id="message"></div>
+
+            <div id="graph"></div>
+        </div>
+    </body>
+</html>

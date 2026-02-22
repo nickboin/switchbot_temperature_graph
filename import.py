@@ -13,19 +13,18 @@ def init_db(conn):
 	cursor.execute('''
         CREATE TABLE IF NOT EXISTS sensors (
             sensor_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT UNIQUE NOT NULL,
-            data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            name TEXT UNIQUE NOT NULL
         )
     ''')
 
 	cursor.execute('''
         CREATE TABLE IF NOT EXISTS sensor_data (
             sensor_id INTEGER NOT NULL,
-            data DATETIME NOT NULL,
+            date DATETIME NOT NULL,
             temp DECIMAL(3,1) NOT NULL,
             rh INTEGER NOT NULL,
             FOREIGN KEY (sensor_id) REFERENCES sensors(sensor_id),
-            PRIMARY KEY (sensor_id, data)
+            PRIMARY KEY (sensor_id, date)
         )
     ''')
 
@@ -39,7 +38,7 @@ def get_or_create_sensor(conn, sensor_name_or_id: int | str):
 	# find sensor by id or name
 	for qry, param in (
 		("SELECT sensor_id FROM sensors WHERE sensor_id = ?", sensor_name_or_id),
-		("SELECT sensor_id FROM sensors WHERE UPPER(TRIM(nome)) = ? LIMIT 1", sensor_name_or_id.strip().upper())
+		("SELECT sensor_id FROM sensors WHERE UPPER(TRIM(name)) = ? LIMIT 1", sensor_name_or_id.strip().upper())
 	):
 		cursor.execute(qry, (param,))
 		result = cursor.fetchone()
@@ -48,7 +47,7 @@ def get_or_create_sensor(conn, sensor_name_or_id: int | str):
 			return result[0]
 
 	# if not found assume it's not present on DB, insert it
-	cursor.execute('INSERT INTO sensors (nome) VALUES (?)', (sensor_name_or_id,))
+	cursor.execute('INSERT INTO sensors (name) VALUES (?)', (sensor_name_or_id,))
 	conn.commit()
 	return cursor.lastrowid
 
@@ -102,7 +101,7 @@ def load_csv(conn, sensor_id, csv_path):
 
 			for row_num, row in enumerate(reader, start=2): # first row is for header
 				try:
-					data = datetime.strptime(row[FIELDS["date"]].strip(), "%d/%m/%Y %H:%M")
+					date = datetime.strptime(row[FIELDS["date"]].strip(), "%d/%m/%Y %H:%M")
 					temp = float(row[FIELDS["temp"]].strip().replace(",", "."))
 					rh  = int(row[FIELDS["rh"]].strip())
 
@@ -114,9 +113,9 @@ def load_csv(conn, sensor_id, csv_path):
 
 					# Inserimento nel database se data non gia' presente
 					cursor.execute('''
-                        INSERT OR IGNORE INTO sensor_data (sensor_id, data, temp, rh)
+                        INSERT OR IGNORE INTO sensor_data (sensor_id, date, temp, rh)
                         VALUES (?, ?, ?, ?)
-                    ''', (sensor_id, data, temp, rh))
+                    ''', (sensor_id, date, temp, rh))
 
 					loaded += 1
 					print_percentage(row_num)
