@@ -4,6 +4,7 @@ async function update_graph() {
     const sensor   = document.getElementById('sensor').value;
     let start_date = document.getElementById('start_date').value;
     let end_date   = document.getElementById('end_date').value;
+    let title      = 'Sensor data';
 
     // dates validation
     if (!start_date && !end_date) {
@@ -12,8 +13,19 @@ async function update_graph() {
         return;
     }
 
-    start_date = new Date(start_date);
-    end_date = new Date(end_date);
+    if (start_date) {
+        start_date = new Date(start_date);
+        title     += ` from <b>${start_date.toLocaleDateString()}</b>`;
+    } else {
+        start_date = new Date(document.getElementById('date_min').value);
+    }
+
+    if (end_date) {
+        end_date = new Date(end_date);
+        title   += ` to <b>${end_date.toLocaleDateString()}</b>`;
+    } else {
+        end_date = new Date(document.getElementById('date_max').value);
+    }
 
     if (start_date > end_date) {
         message.textContent = 'Start date must be before end date!';
@@ -25,7 +37,15 @@ async function update_graph() {
     loading.classList.add('visibile');
 
     try {
-        const response = await fetch(`/api/graph_data?sensor=${sensor}&start_date=${start_date.toISOString().split('T')[0]}&end_date=${end_date.toISOString().split('T')[0]}`);
+        const response = await fetch('/api/graph_data', {
+            method: "POST",
+            headers: {"Content-Type": "application/x-www-form-urlencoded"},
+            body: new URLSearchParams({
+                sensor: sensor,
+                start_date: start_date.toISOString().split('T')[0],
+                end_date: end_date.toISOString().split('T')[0],
+            }),
+        });
 
         if (!response.ok) {
             throw new Error((await response.json()).error ?? 'Error while loading data!');
@@ -40,7 +60,7 @@ async function update_graph() {
             return;
         }
 
-        makePlot(data, `Sensor data from <b>${start_date.toLocaleDateString()}</b> to <b>${end_date.toLocaleDateString()}</b>`);
+        makePlot(data, title);
     } catch (error) {
         message.textContent = 'Error: ' + error.message;
         message.classList.add('visibile');
@@ -51,11 +71,9 @@ async function update_graph() {
 
 // reset_graph i filtri e mostra tutti i data
 function reset_graph() {
-    document.getElementById('start_date').value = '';
-    document.getElementById('end_date').value = '';
     document.getElementById('message').classList.remove('visibile');
 
-    fetch('/api/graph_data')
+    fetch('/api/graph_data', {method: "POST"})
         .then(response => response.json())
         .then((data) => { makePlot(data, 'All sensor data'); });
 }
@@ -117,4 +135,11 @@ window.addEventListener('load', () => {
     document.getElementById('start_date').value = first_date.toISOString().split('T')[0];
 
     update_graph();
+
+    document.getElementById('search_form').addEventListener('submit', function (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+
+        update_graph();
+    });
 });

@@ -1,3 +1,6 @@
-- migrate search filter to actual html form
-- checkboxes for selecting "temp" and/or "rh" lines
-- import tool integrated on web page
+- Make readme
+- Include plotly library for local use + license citation
+- Dark theme
+- Parametrize database path
+- Checkboxes for selecting "temp" and/or "rh" lines
+- CSV Import tool integrated on web page

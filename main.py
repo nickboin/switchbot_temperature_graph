@@ -56,7 +56,7 @@ def index():
 	cursor = conn.cursor()
 
 	# fetch basic data for page initialization
-	cursor.execute("SELECT MIN(date) AS date_min, MAX(date) AS date_max FROM sensor_data")
+	cursor.execute("SELECT MIN(DATE(date)) AS date_min, MAX(DATE(date)) AS date_max FROM sensor_data")
 	result = cursor.fetchone()
 	date_min = result["date_min"] if result else ""
 	date_max = result["date_max"] if result else ""
@@ -73,12 +73,12 @@ def index():
 	)
 
 
-@app.route('/api/graph_data')
+@app.route('/api/graph_data', methods = ['POST'])
 def get_graph():
 	"""Graph JSON data API"""
-	sensor_id  = int(request.args.get('sensor', 0))
-	start_date = request.args.get('start_date', None)
-	end_date   = request.args.get('end_date', None)
+	sensor_id  = int(request.form.get('sensor', 0))
+	start_date = request.form.get('start_date', None)
+	end_date   = request.form.get('end_date', None)
 
 	df = get_sensor_data(sensor_id, start_date, end_date)
 
