@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify
 import sqlite3
-import pandas as pd
 
 app = Flask(__name__)
 DATABASE = 'sensor_data.db'
@@ -14,32 +13,41 @@ def get_db_connection():
 
 def get_sensor_data(sensor_id=0, start_date=None, end_date=None):
 	"""Find records from the database, filtering sensor and dates (if given)"""
-	conn = get_db_connection()
 
-	# if not given then act as per interface (first element on select)
-	if not sensor_id:
-		sensor_id = conn.execute("SELECT sensor_id FROM sensors ORDER BY name LIMIT 1").fetchone()[0]
+	with get_db_connection() as conn:
+		# if not given then act as per interface (first element on select)
+		if not sensor_id:
+			sensor_id = conn.execute("SELECT sensor_id FROM sensors ORDER BY name LIMIT 1").fetchone()[0]
 
-	query = "SELECT * FROM sensor_data WHERE sensor_id = ?"
-	params = [sensor_id]
+		query = "SELECT * FROM sensor_data WHERE sensor_id = ?"
+		params = [sensor_id]
 
-	for op, val in {
-		">=": start_date,
-		"<="  : end_date,
-	}.items():
-		if val:
-			query += f" AND date {op} ?"
-			params.append(val)
+		# filtering, if set, for dates
+		for op, val in {
+			">=": start_date,
+			"<="  : end_date,
+		}.items():
+			if val:
+				query += f" AND date {op} ?"
+				params.append(val)
 
-	# TODO why pandas?
-	df = pd.read_sql_query(query + " ORDER BY date ASC", conn, params=params)
-	conn.close()
+		# executing query
+		cursor = conn.cursor()
+		cursor.execute(query + " ORDER BY date ASC", params)
 
-	# Converte la colonna 'date' in datetime se necessario
-	df['date'] = pd.to_datetime(df['date'])
+		# mapping desired result in different parallel arrays
+		df = {'empty': True, 'date': [], 'temp': [], 'rh': []}
 
-	return df
+		row = cursor.fetchone()
+		df['empty'] = not row
 
+		while row:
+			df["date"].append(row['date'])
+			df["temp"].append(row['temp'])
+			df["rh"].append(row['rh'])
+			row = cursor.fetchone()
+
+		return df
 
 @app.route('/')
 def index():
@@ -74,15 +82,11 @@ def get_graph():
 
 	df = get_sensor_data(sensor_id, start_date, end_date)
 
-	if df.empty:
+	if df['empty']:
 		return jsonify({'error': 'No data available!'}), 400
 
 	# Prepare data for Plotly
-	return jsonify({
-		'date': df['date'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist(),
-		'temp': df['temp'].tolist(),
-		'rh': df['rh'].tolist()
-	})
+	return jsonify(df)
 
 
 if __name__ == '__main__':

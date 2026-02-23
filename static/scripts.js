@@ -76,7 +76,11 @@ function makePlot(data, title) {
         name: 'Relative humidity (%)',
         type: 'scatter',
         mode: 'lines',
-        line: { color: '#3498db', width: 2 },
+        line: {
+            shape: 'spline',
+            color: '#3498db',
+            width: 2
+        },
         yaxis: 'y2'
     }], {
         title: title,
@@ -91,7 +95,8 @@ function makePlot(data, title) {
             titlefont: { color: '#3498db' },
             tickfont: { color: '#3498db' },
             overlaying: 'y',
-            side: 'right'
+            side: 'right',
+            range: [0, 100]
         },
         hovermode: 'x unified',
         margin: { r: 80 }

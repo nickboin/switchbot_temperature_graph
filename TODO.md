@@ -1,0 +1,3 @@
+- migrate search filter to actual html form
+- checkboxes for selecting "temp" and/or "rh" lines
+- import tool integrated on web page
